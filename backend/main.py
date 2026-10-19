@@ -32,7 +32,7 @@ async def upload_document(file: UploadFile = File(...)):
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve)) from ve
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Error ingesting PDF") from exc
+        raise HTTPException(status_code=500, detail=f"Error ingesting PDF{str(exc)}") from exc
 
 @app.post("/search")
 def search_documents(request: SearchRequest):
@@ -45,7 +45,7 @@ def search_documents(request: SearchRequest):
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve)) from ve
     except Exception as exc:
-        raise HTTPException(status_code=500, detail="Document search failed") from exc
+        raise HTTPException(status_code=500, detail=f"Document search failed:{str(exc)}") from exc
 
 @app.post("/documents/extract")
 async def extract_pdf(file: UploadFile = File(...)):
@@ -66,7 +66,7 @@ async def extract_pdf(file: UploadFile = File(...)):
                     "text": page.get_text("text").strip(),
                 })
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(exc)}")
+        raise HTTPException(status_code=500, detail="Error processing PDF") from exc
 
     return {
         "filename": file.filename,

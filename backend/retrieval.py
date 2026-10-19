@@ -2,6 +2,7 @@
 
 from database import get_connection
 from embeddings import embed_texts
+from pgvector import Vector
 
 def retrieve_chunks(question: str, top_k: int = 8):
     if not question.strip():
@@ -10,7 +11,7 @@ def retrieve_chunks(question: str, top_k: int = 8):
     if not 1 <= top_k <= 50:
         raise ValueError("top_k must be between 1 and 50")
 
-    query_vector = embed_texts([question])[0]
+    query_vector = Vector(embed_texts([question])[0])
 
     with get_connection() as conn:
         with conn.cursor() as cur:
