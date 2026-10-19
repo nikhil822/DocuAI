@@ -1,0 +1,183 @@
+
+[
+  {
+    "question": "How much professional experience does the candidate have in backend engineering?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["2+ years", "backend engineer"]
+  },
+  {
+    "question": "Which programming languages does the candidate know?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["JavaScript", "TypeScript", "Go", "C++"]
+  },
+  {
+    "question": "Which backend frameworks and technologies has the candidate worked with?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Node.js", "Express.js", "FastAPI"]
+  },
+  {
+    "question": "Which databases and caching technologies are listed in the resume?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["PostgreSQL", "MongoDB", "Redis"]
+  },
+  {
+    "question": "Which AWS services has the candidate used?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Lambda", "Step Functions", "S3", "Athena"]
+  },
+  {
+    "question": "How did the candidate prevent the frontend from blocking during long-running Athena queries?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["asynchronous", "Lambda", "Athena", "PostgreSQL"]
+  },
+  {
+    "question": "How long did the long-running queries take before the asynchronous workflow was implemented?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["3–8 minutes", "3-8 minutes"]
+  },
+  {
+    "question": "How did AWS Step Functions improve debugging and pipeline reliability?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_answer_terms": ["60%", "80%", "85%"],
+    "expected_pages": [1]
+  },
+  {
+    "question": "Which techniques did the candidate use to improve Redis cache performance?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["versioned cache keys", "request coalescing", "cache warming"]
+  },
+  {
+    "question": "Why did the candidate implement Server-Sent Events?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["real-time job-status", "polling overhead"]
+  },
+  {
+    "question": "How many authentication implementations were consolidated, and what improvement resulted?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["3", "40%", "token management"]
+  },
+  {
+    "question": "How did the candidate export large PostgreSQL datasets to S3 without loading everything into memory?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["PostgreSQL COPY", "S3 multipart uploads", "Go"]
+  },
+  {
+    "question": "By how much did the PostgreSQL-to-S3 streaming approach reduce peak memory usage?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["80%", "peak memory"]
+  },
+  {
+    "question": "How did the candidate handle uploads of financial datasets larger than 1 GB?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["presigned URLs", "direct-to-S3"]
+  },
+  {
+    "question": "What improvement in upload latency was achieved using direct-to-S3 uploads?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["60%", "upload latency"]
+  },
+  {
+    "question": "How many rows could the candidate's data ingestion pipeline process?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["4–10 million", "4-10 million", "Athena"]
+  },
+  {
+    "question": "How much did the data ingestion pipeline reduce analyst report turnaround time?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["under 4 minutes", "hours"]
+  },
+  {
+    "question": "How did the candidate improve API security in Node.js and Express?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Joi", "schema validation", "12"]
+  },
+  {
+    "question": "What did Joi validation achieve across the candidate's API endpoints?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["malformed payloads", "invalid-state"]
+  },
+  {
+    "question": "Which frontend state management technology did the candidate use during the internship?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Redux Toolkit"]
+  },
+  {
+    "question": "How many core pages were standardized using Redux Toolkit?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["5 core pages", "Redux Toolkit"]
+  },
+  {
+    "question": "By how much did the internship project reduce unnecessary API calls?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["30%", "API calls"]
+  },
+  {
+    "question": "What is AutoBrowser, and what does it do?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["AI agent platform", "natural-language commands", "browser actions"]
+  },
+  {
+    "question": "Which technologies power the AutoBrowser backend?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Node.js", "TypeScript", "Express", "Playwright"]
+  },
+  {
+    "question": "Which technology does AutoBrowser use to automate browser actions?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Playwright"]
+  },
+  {
+    "question": "Which model ecosystem is mentioned for LLM inference in AutoBrowser?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Hugging Face Transformers", "LLM inference"]
+  },
+  {
+    "question": "How does AutoBrowser record requests and browser actions?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Winston", "request", "action logging"]
+  },
+  {
+    "question": "Which distributed systems and software engineering practices are listed in the candidate's skills?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["event-driven architecture", "distributed systems", "observability"]
+  },
+  {
+    "question": "Where did the candidate complete their B.Tech, and what was their CGPA?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["Veer Surendra Sai University of Technology", "8.39/10"]
+  },
+  {
+    "question": "What competitive programming achievements are mentioned in the resume?",
+    "expected_document": "907b1dffca36734f16098cd6eda7d37b48abf7b5a726a0ac7d9c43425520ad24",
+    "expected_pages": [1],
+    "expected_answer_terms": ["ICPC Asia West Regionalist 2022", "AIR 322", "Codechef Starters 41"]
+  }
+]

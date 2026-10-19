@@ -1,8 +1,9 @@
 import fitz
 from fastapi import FastAPI, File, UploadFile, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from retrieval import retrieve_chunks
 from ingestion import ingest_pdf
+from llm_service import generate_answer
 
 app = FastAPI(
     title="DocuAI",
@@ -13,6 +14,10 @@ app = FastAPI(
 class SearchRequest(BaseModel):
     question: str
     top_k: int = 8
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=4000)
+    top_k: int = Field(default=8, ge=1, le=50)
 
 @app.get("/health")
 def health_check():
@@ -73,3 +78,23 @@ async def extract_pdf(file: UploadFile = File(...)):
         "num_pages": len(pages),
         "pages": pages,
     }
+
+@app.post("/ask")
+async def ask_question(request: AskRequest):
+    question = request.question.strip()
+
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    try:
+        # retrieve relevant chunks from the database
+        chunks = retrieve_chunks(question=question, top_k=request.top_k)
+
+        # generate an answer
+        result = await generate_answer(question=question, chunks=chunks)
+        return result
+
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(exc)}") from exc

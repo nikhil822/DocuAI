@@ -3,10 +3,12 @@ import os
 import psycopg
 from pgvector.psycopg import register_vector
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://raguser:local_dev_password@localhost:5433/ragdb")
+# DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://raguser:local_dev_password@localhost:5433/ragdb")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres.dcqfcrlilkxopbyewfhs:personalDocuai13@aws-0-ap-northeast-2.pooler.supabase.com:5432/postgres")
 
 def get_connection():
-    conn = psycopg.connect(DATABASE_URL)
+    database_url = os.environ.get("SUPABASE_DB_URL") or DATABASE_URL
+    conn = psycopg.connect(database_url)
     register_vector(conn)
     return conn
 
