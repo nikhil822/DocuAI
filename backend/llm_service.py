@@ -1,6 +1,7 @@
+import json
 import os
 from pathlib import Path
-
+from collections.abc import AsyncIterator
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
@@ -80,3 +81,72 @@ async def generate_answer(question: str, chunks: list[dict]) -> dict:
         "answer": answer,
         "sources": sources,
     }
+
+async def generate_answer_stream(question: str, chunks: list[dict]) -> AsyncIterator[str]:
+    def send_event(event_name: str, data: dict) -> str:
+        return (
+            f"event: {event_name}\n"
+            f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+        )
+
+    if not chunks:
+        yield send_event("answer", {
+            "text": "I couldn't find enough information in the provided documents to answer this question.",
+        })
+        yield send_event("sources", {"sources": []})
+        yield send_event("done", {})
+        return
+
+    context_parts = []
+    sources = []
+
+    for index, chunk in enumerate(chunks, start=1):
+        source_id = f"S{index}"
+
+        context_parts.append(
+            f"[{source_id}]\n"
+            f"Document: {chunk['document_name']}\n"
+            f"Page: {chunk['page_number']}\n"
+            f"Content: \n{chunk['text']}"
+        )
+
+        sources.append({
+            "source_id": source_id,
+            "document_name": chunk["document_name"],
+            "page_number": chunk["page_number"],
+            "text": chunk["text"],
+            "chunk_index": chunk["chunk_index"],
+            "similarity": chunk["similarity"],
+        })
+
+    context = "\n\n".join(context_parts)
+    stream = await client.chat.completions.create(
+        model=MODEL_NAME,
+        temperature=0,
+        messages=[
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT,
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"Question:\n{question}\n\n"
+                    f"Document context:\n{context}\n\n"
+                    "Answer using only the context. Cite claims "
+                    "using source IDs such as [S1]. If the context "
+                    "does not support an answer, say so."
+                )
+            },
+        ],
+        stream=True
+    )
+
+    async for part in stream:
+        text = part.choices[0].delta.content
+
+        if text:
+            yield send_event("token", {"text": text})
+
+    yield send_event("sources", {"sources": sources})
+    yield send_event("done", {})

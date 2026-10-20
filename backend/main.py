@@ -1,14 +1,26 @@
 import fitz
+import json
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel, Field
 from retrieval import retrieve_chunks
 from ingestion import ingest_pdf
 from llm_service import generate_answer
+from fastapi.responses import StreamingResponse
+from llm_service import generate_answer_stream
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="DocuAI",
     description="A RAG service for PDF question answering",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 class SearchRequest(BaseModel):
@@ -98,3 +110,28 @@ async def ask_question(request: AskRequest):
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Error processing request: {str(exc)}") from exc
+
+@app.post("/ask/stream")
+async def ask_question_stream(request: AskRequest):
+    question = request.question.strip()
+
+    if not question:
+        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+
+    try:
+        chunks = retrieve_chunks(question=question, top_k=request.top_k)
+
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    async def event_generator():
+        try:
+            async for event in generate_answer_stream(question=question, chunks=chunks):
+                yield event
+        except Exception as exc:
+            yield (
+                "event: error\n"
+                f"data: {json.dumps({'message': 'Answer generation failed'})}\n\n" 
+            )
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
