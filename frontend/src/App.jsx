@@ -55,8 +55,10 @@ export default function App() {
         );
       }
 
+      const job = await waitForIngestion(result.job_id);
+
       setUploadMessage(
-        `Successfully processed ${selectedFile.name}. ` +
+        `Successfully processed ${job.document_name}. ` +
         "You can now ask questions about it."
       );
 
@@ -234,6 +236,35 @@ export default function App() {
       setLoading(false);
     }
   }
+
+
+  async function waitForIngestion(jobId) {
+    while (true) {
+      const response = await fetch(
+        `${API_URL}/documents/jobs/${jobId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Could not retrieve ingestion status.");
+      }
+
+      const job = await response.json();
+
+      if (job.status === "completed") {
+        return job;
+      }
+
+      if (job.status === "failed") {
+        throw new Error(
+          job.error || "Document ingestion failed."
+        );
+      }
+
+      // Poll every 1.5 seconds while queued or processing.
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+
 
   return (
     <main className="app-shell">
