@@ -733,39 +733,3 @@ documents:
     credentials, and appropriate connection pooling before production
     deployment.
 
-## Roadmap
-
--   [x] Extract text from PDFs.
--   [x] Chunk text and generate embeddings.
--   [x] Store chunks and vectors in PostgreSQL/pgvector.
--   [x] Retrieve top-k similar chunks.
--   [x] Generate context-grounded LLM responses.
--   [x] Stream answer text with SSE.
--   [x] Build a React chat UI and fix incremental rendering.
--   [ ] Verify end-to-end PDF upload from React.
--   [ ] Complete and test background ingestion/job polling.
--   [ ] Add document IDs, ownership, authentication, and access-aware
-    retrieval.
--   [ ] Add reliable worker retries and recovery.
--   [ ] Improve retrieval and answer/citation evaluation.
--   [ ] Add PDF page preview and clickable source citations.
--   [ ] Add automated tests, CI, logging, and production deployment
-    configuration.
-
-## Contributing
-
-For local changes:
-
-1.  Create a feature branch.
-2.  Keep configuration secrets in environment variables.
-3.  Test backend endpoints and frontend behavior.
-4.  Update this README when routes, schemas, environment variables, or
-    architecture change.
-5.  Do not commit private PDFs, temporary uploads, credentials, `.venv`,
-    `node_modules`, or generated secrets.
-
-## License
-
-No license has been selected yet. Add a `LICENSE` file before
-distributing or accepting external contributions, and choose terms
-appropriate for the project.
