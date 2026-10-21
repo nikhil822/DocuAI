@@ -28,10 +28,6 @@ document passages, with source references and streaming output.
 -   [API endpoints](#api-endpoints)
 -   [Data model](#data-model)
 -   [Evaluation](#evaluation)
--   [Troubleshooting](#troubleshooting)
--   [Security and production
-    considerations](#security-and-production-considerations)
--   [Roadmap](#roadmap)
 
 ## Overview
 
