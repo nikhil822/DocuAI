@@ -11,6 +11,64 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadError, setUploadError] = useState("");
+
+
+  async function uploadDocument(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    if (!selectedFile || uploading) return;
+
+    if (
+      selectedFile.type !== "application/pdf" &&
+      !selectedFile.name.toLowerCase().endsWith(".pdf")
+    ) {
+      setUploadError("Please select a PDF file.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadMessage("");
+    setUploadError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch(
+        `${API_URL}/documents/ingest`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result.detail || `Upload failed (${response.status})`
+        );
+      }
+
+      setUploadMessage(
+        `Successfully processed ${selectedFile.name}. ` +
+        "You can now ask questions about it."
+      );
+
+      setSelectedFile(null);
+      form.reset();
+    } catch (err) {
+      setUploadError(err.message || "Document upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
 
   async function askQuestion(event) {
     event.preventDefault();
@@ -188,6 +246,53 @@ export default function App() {
       </header>
 
       <section className="chat-panel">
+
+        <form className="upload-panel" onSubmit={uploadDocument}>
+          <div className="upload-heading">
+            <div>
+              <h2>Knowledge base</h2>
+              <p>Upload a PDF to make its content searchable.</p>
+            </div>
+            <span className="upload-icon">PDF</span>
+          </div>
+
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            disabled={uploading}
+            onChange={(event) => {
+              setSelectedFile(event.target.files?.[0] || null);
+              setUploadMessage("");
+              setUploadError("");
+            }}
+          />
+
+          {selectedFile && (
+            <p className="file-name">
+              Selected: {selectedFile.name}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={!selectedFile || uploading}
+          >
+            {uploading ? "Processing document..." : "Upload PDF"}
+          </button>
+
+          {uploadMessage && (
+            <p className="upload-success" role="status">
+              {uploadMessage}
+            </p>
+          )}
+
+          {uploadError && (
+            <p className="error-message" role="alert">
+              {uploadError}
+            </p>
+          )}
+        </form>
+
         <div className="messages">
           {messages.length === 0 && (
             <div className="welcome">
