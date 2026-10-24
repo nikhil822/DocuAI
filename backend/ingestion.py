@@ -1,5 +1,5 @@
 import hashlib
-
+import uuid
 import fitz
 
 from chunking import chunk_text
@@ -45,22 +45,36 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
     # generate embeddings
     vectors = embed_texts([chunk["text"] for chunk in chunks])
 
-    # create stable document id from pdf's content
-    document_id = hashlib.sha256(pdf_bytes).hexdigest()
+    content_hash = hashlib.sha256(pdf_bytes).hexdigest()
+    document_id = uuid.uuid4()
 
-    # store the chunks and embeddings in one transaction
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # delete any existing chunks for this document
             cur.execute(
-                "DELETE FROM chunks WHERE document_name = %s", (document_id,)
+                """
+                INSERT INTO documents (id, filename, content_hash)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (filename)
+                DO UPDATE SET
+                    content_hash = EXCLUDED.content_hash,
+                    updated_at = NOW()
+                RETURNING id
+                """,
+                (document_id, filename, content_hash),
+            )
+            document_id = cur.fetchone()[0]
+
+            #replace old chunks only for this doc
+            cur.execute(
+                "DELETE FROM chunks WHERE document_id = %s",
+                (document_id,),
             )
 
-            # insert new chunks
             for chunk, vector in zip(chunks, vectors):
                 cur.execute(
                     """
                     INSERT INTO chunks (
+                        document_id,
                         document_name,
                         page_number,
                         chunk_index,
@@ -68,10 +82,11 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
                         embedding,
                         embedding_model
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         document_id,
+                        filename,
                         chunk["page_number"],
                         chunk["chunk_index"],
                         chunk["text"],
@@ -81,7 +96,7 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
                 )
 
     return {
-        "document_id": document_id,
+        "document_id": str(document_id),
         "filename": filename,
         "total_pages": len(pages),
         "indexed_chunks": len(chunks),

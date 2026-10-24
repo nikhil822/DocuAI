@@ -18,14 +18,16 @@ def retrieve_chunks(question: str, top_k: int = 8):
             cur.execute(
                 """
                 SELECT
-                    document_name,
-                    page_number,
-                    chunk_index,
-                    text,
-                    1 - (embedding <=> %s) AS similarity
-                FROM chunks
-                WHERE embedding_model = %s
-                ORDER BY embedding <=> %s
+                    d.filename AS document_name,
+                    c.page_number,
+                    c.chunk_index,
+                    c.text,
+                    1 - (c.embedding <=> %s) AS similarity
+                FROM chunks AS c
+                JOIN documents AS d
+                    ON d.id = c.document_id
+                WHERE c.embedding_model = %s
+                ORDER BY c.embedding <=> %s
                 LIMIT %s
                 """,
                 (query_vector, "sentence-transformers/all-MiniLM-L6-v2", query_vector, top_k),

@@ -63,7 +63,7 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
                     break
                 total_size += len(data)
                 if total_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(status_code=400, detail="File size exceeds the maximum limit of 25 MB.")
+                    raise HTTPException(status_code=413, detail="File size exceeds the maximum limit of 25 MB.")
                 f.write(data)
 
         if total_size == 0:
@@ -86,9 +86,11 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
             "status": "queued",
             "status_url": f"/documents/jobs/{job_id}"
         }
-    except ValueError as ve:
+    except HTTPException:
         upload_path.unlink(missing_ok=True)
         raise
+    except ValueError as ve:
+        upload_path.unlink(missing_ok=True)
     except Exception:
         upload_path.unlink(missing_ok=True)
         raise HTTPException(status_code=500, detail=f"Error ingesting PDF") from None

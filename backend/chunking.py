@@ -1,6 +1,6 @@
 import tiktoken
 
-def chunk_text(text: str, chunk_size: int = 10, overlap: int = 2) -> list[str]:
+def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str]:
     if chunk_size <= 0:
         raise ValueError("chunk_size must be a positive integer.")
 

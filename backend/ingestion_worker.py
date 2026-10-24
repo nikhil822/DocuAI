@@ -24,6 +24,10 @@ def update_job(job_id: str, status: str, error: str | None = None):
                 """,
                 (status, error, status, status, job_id),
             )
+            if cur.rowcount == 0:
+                raise ValueError(
+                    f"Ingestion job {job_id} does not exist."
+                )
 
 def process_ingestion_job(job_id: str, file_path: str, document_name: str):
     path = Path(file_path)
@@ -45,6 +49,6 @@ def process_ingestion_job(job_id: str, file_path: str, document_name: str):
 
     finally:
         try:
-            path.unlink()  # Delete the file after processing
+            path.unlink(missing_ok=True)  # Delete the file after processing
         except Exception as delete_exc:
             print(f"Error deleting file {file_path} for job {job_id}: {delete_exc}")
