@@ -1,5 +1,8 @@
+import asyncio
 import fitz
 import json
+import logging
+import os
 import uuid
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks
@@ -13,7 +16,9 @@ from fastapi.responses import StreamingResponse
 from llm_service import generate_answer_stream
 from fastapi.middleware.cors import CORSMiddleware
 
-UPLOAD_DIR = Path("uploads")
+logger = logging.getLogger(__name__)
+
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "uploads"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25 MB
@@ -26,7 +31,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:5173",
+        ).split(",")
+        if origin.strip()
+    ],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
@@ -45,30 +57,63 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/documents/ingest", status_code=202)
-async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+async def upload_document(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
-        
+        await file.close()
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Please upload a PDF file.",
+        )
+
     document_name = Path(file.filename).name
     job_id = str(uuid.uuid4())
     upload_path = UPLOAD_DIR / f"{job_id}.pdf"
-
     total_size = 0
 
     try:
-        with upload_path.open("wb") as f:
+        with upload_path.open("wb") as output:
             while True:
                 data = await file.read(1024 * 1024)
+
                 if not data:
                     break
+
                 total_size += len(data)
+
                 if total_size > MAX_UPLOAD_SIZE:
-                    raise HTTPException(status_code=413, detail="File size exceeds the maximum limit of 25 MB.")
-                f.write(data)
+                    raise HTTPException(
+                        status_code=413,
+                        detail="File size exceeds the maximum limit of 25 MB.",
+                    )
+
+                output.write(data)
 
         if total_size == 0:
-            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+            raise HTTPException(
+                status_code=400,
+                detail="Uploaded file is empty.",
+            )
 
+        # Validate the actual PDF, not just its extension.
+        try:
+            with fitz.open(upload_path) as pdf:
+                if pdf.page_count == 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="The PDF contains no pages.",
+                    )
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded file is not a valid PDF.",
+            ) from None
+
+        # Preserve the existing database schema and job flow.
         with get_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
@@ -79,21 +124,42 @@ async def upload_document(background_tasks: BackgroundTasks, file: UploadFile = 
                     (job_id, document_name),
                 )
 
-        background_tasks.add_task(process_ingestion_job, job_id, str(upload_path), document_name)
+        background_tasks.add_task(
+            process_ingestion_job,
+            job_id,
+            str(upload_path),
+            document_name,
+        )
+
         return {
             "job_id": job_id,
             "document_name": document_name,
             "status": "queued",
-            "status_url": f"/documents/jobs/{job_id}"
+            "status_url": f"/documents/jobs/{job_id}",
         }
+
     except HTTPException:
         upload_path.unlink(missing_ok=True)
         raise
-    except ValueError as ve:
+
+    except ValueError:
         upload_path.unlink(missing_ok=True)
+        logger.info("PDF upload failed validation", exc_info=True)
+
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded PDF could not be processed.",
+        ) from None
+
     except Exception:
         upload_path.unlink(missing_ok=True)
-        raise HTTPException(status_code=500, detail=f"Error ingesting PDF") from None
+        logger.exception("Failed to accept uploaded document")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to accept the uploaded document.",
+        ) from None
+
     finally:
         await file.close()
 
@@ -113,23 +179,58 @@ def search_documents(request: SearchRequest):
 @app.post("/documents/extract")
 async def extract_pdf(file: UploadFile = File(...)):
     if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Invalid file type. Please upload a PDF file.")
-        
-    pdf_bytes = await file.read()
-    if not pdf_bytes:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+        await file.close()
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Please upload a PDF file.",
+        )
+
+    pdf_bytes = bytearray()
 
     try:
-        with fitz.open(stream=pdf_bytes, filetype="pdf") as pdf:
-            pages = []
+        while True:
+            data = await file.read(1024 * 1024)
 
-            for page_index, page in enumerate(pdf):
-                pages.append({
+            if not data:
+                break
+
+            if len(pdf_bytes) + len(data) > MAX_UPLOAD_SIZE:
+                raise HTTPException(
+                    status_code=413,
+                    detail="File size exceeds the maximum limit of 25 MB.",
+                )
+
+            pdf_bytes.extend(data)
+
+    finally:
+        await file.close()
+
+    if not pdf_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file is empty.",
+        )
+
+    try:
+        with fitz.open(
+            stream=bytes(pdf_bytes),
+            filetype="pdf",
+        ) as pdf:
+            pages = [
+                {
                     "page_number": page_index + 1,
                     "text": page.get_text("text").strip(),
-                })
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail="Error processing PDF") from exc
+                }
+                for page_index, page in enumerate(pdf)
+            ]
+
+    except Exception:
+        logger.info("Rejected invalid PDF during extraction")
+
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded file is not a valid PDF.",
+        ) from None
 
     return {
         "filename": file.filename,
@@ -142,20 +243,47 @@ async def ask_question(request: AskRequest):
     question = request.question.strip()
 
     if not question:
-        raise HTTPException(status_code=400, detail="Question cannot be empty.")
+        raise HTTPException(
+            status_code=400,
+            detail="Question cannot be empty.",
+        )
 
     try:
-        # retrieve relevant chunks from the database
-        chunks = retrieve_chunks(question=question, top_k=request.top_k)
+        chunks = await asyncio.to_thread(
+            retrieve_chunks,
+            question=question,
+            top_k=request.top_k,
+        )
 
-        # generate an answer
-        result = await generate_answer(question=question, chunks=chunks)
+        if not chunks:
+            return {
+                "answer": (
+                    "I couldn't find relevant information in the "
+                    "uploaded documents to answer this question."
+                ),
+                "sources": [],
+            }
+
+        result = await generate_answer(
+            question=question,
+            chunks=chunks,
+        )
+
         return result
 
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Error processing request: {str(exc)}") from exc
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
+
+    except Exception:
+        logger.exception("Failed to process /ask request")
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to process the question right now.",
+        ) from None
 
 @app.post("/ask/stream")
 async def ask_question_stream(request: AskRequest):
@@ -165,7 +293,7 @@ async def ask_question_stream(request: AskRequest):
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
 
     try:
-        chunks = retrieve_chunks(question=question, top_k=request.top_k)
+        chunks = await asyncio.to_thread(retrieve_chunks, question=question, top_k=request.top_k)
 
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

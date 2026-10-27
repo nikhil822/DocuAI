@@ -1,3 +1,27 @@
-__pycache__
-.DS_Store
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
+
+# Uploaded documents and generated data
+uploads/
+backend/uploads/
+
+# Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
