@@ -2,7 +2,10 @@
 import json
 from pathlib import Path
 
+from dotenv import load_dotenv
 from retrieval import retrieve_chunks
+
+load_dotenv(Path(__file__).with_name(".env"))
 
 TOP_K = 8
 DATASET_PATH = Path(__file__).with_name("eval_questions.json")
@@ -57,6 +60,7 @@ def main():
 
         
         if not hit:
+            misses.append(item["question"])
             print("\n--- MISS DIAGNOSTICS ---")
             print("Question:", item["question"])
             print("Expected document:", item["expected_document"])

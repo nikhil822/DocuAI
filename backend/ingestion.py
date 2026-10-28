@@ -1,7 +1,7 @@
 import hashlib
 import uuid
 import fitz
-
+from psycopg.types.json import Jsonb
 from chunking import chunk_text
 from embeddings import embed_texts
 from database import get_connection
@@ -13,6 +13,8 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
 
     if not pdf_bytes:
         raise ValueError("PDF is empty")
+
+    content_hash = hashlib.sha256(pdf_bytes).hexdigest()
 
     # extract text
     with fitz.open(stream=pdf_bytes, filetype="pdf") as pdf:
@@ -42,12 +44,36 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
     if not chunks:
         raise ValueError("No text found in PDF")
 
+    #check whether this exact doc is already present
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, content_hash FROM documents WHERE filename = %s
+                """,
+                (filename)
+            )
+            existing = cur.fetchone()
+
+    if existing and existing[1] == content_hash:
+        return {
+            "document_id": str(existing[0]),
+            "filename": filename,
+            "total_pages": len(pages),
+            "indexed_chunks": 0,
+            "unchanged": True,
+        }
+
     # generate embeddings
     vectors = embed_texts([chunk["text"] for chunk in chunks])
+    if len(vectors) != len(chunks):
+        raise RuntimeError(
+            "Embedding count does not match chunk count"
+        )
 
-    content_hash = hashlib.sha256(pdf_bytes).hexdigest()
     document_id = uuid.uuid4()
 
+    #store the document and chunks in one transaction
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -66,33 +92,37 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
 
             #replace old chunks only for this doc
             cur.execute(
-                "DELETE FROM chunks WHERE document_id = %s",
-                (document_id,),
+                "DELETE FROM chunks WHERE document_id = %s OR (document_id IS NULL AND document_name = %s)",
+                (document_id, filename),
             )
 
-            for chunk, vector in zip(chunks, vectors):
-                cur.execute(
-                    """
-                    INSERT INTO chunks (
-                        document_id,
-                        document_name,
-                        page_number,
-                        chunk_index,
-                        text,
-                        embedding,
-                        embedding_model
-                    )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    """,
-                    (
-                        document_id,
-                        filename,
-                        chunk["page_number"],
-                        chunk["chunk_index"],
-                        chunk["text"],
-                        vector,
-                        MODEL_NAME,
-                    ),
+            rows = [
+                (
+                    document_id,
+                    filename,
+                    chunk["page_number"],
+                    chunk["chunk_index"],
+                    chunk["text"],
+                    vector,
+                    MODEL_NAME,
+                )
+                for chunk, vector in zip(chunks, vectors)
+            ]
+
+            cur.execute(
+                """
+                INSERT INTO chunks (
+                    document_id,
+                    document_name,
+                    page_number,
+                    chunk_index,
+                    text,
+                    embedding,
+                    embedding_model
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                rows
                 )
 
     return {
@@ -100,4 +130,5 @@ def ingest_pdf(filename: str, pdf_bytes: bytes) -> dict:
         "filename": filename,
         "total_pages": len(pages),
         "indexed_chunks": len(chunks),
+        "unchanged": False
     }

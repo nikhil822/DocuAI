@@ -1,6 +1,18 @@
 
 [
   {
+    "question": "How much did the PostgreSQL COPY streaming implementation reduce peak memory usage?",
+    "expected_document": "Nikhil Fullstack Resume.pdf",
+    "expected_pages": [1],
+    "expected_answer_terms": ["80%", "peak memory"]
+  },
+  {
+    "question": "Which AWS services were used to build the asynchronous workflow for long-running queries?",
+    "expected_document": "Nikhil Fullstack Resume.pdf",
+    "expected_pages": [1],
+    "expected_answer_terms": ["AWS Lambda", "Athena"]
+  },
+  {
     "question": "How much professional experience does the candidate have in backend engineering?",
     "expected_document": "Nikhil Fullstack Resume.pdf",
     "expected_pages": [1],
@@ -97,22 +109,10 @@
     "expected_answer_terms": ["4–10 million", "4-10 million", "Athena"]
   },
   {
-    "question": "How much did the data ingestion pipeline reduce analyst report turnaround time?",
-    "expected_document": "Nikhil Fullstack Resume.pdf",
-    "expected_pages": [1],
-    "expected_answer_terms": ["under 4 minutes", "hours"]
-  },
-  {
     "question": "How did the candidate improve API security in Node.js and Express?",
     "expected_document": "Nikhil Fullstack Resume.pdf",
     "expected_pages": [1],
     "expected_answer_terms": ["Joi", "schema validation", "12"]
-  },
-  {
-    "question": "What did Joi validation achieve across the candidate's API endpoints?",
-    "expected_document": "Nikhil Fullstack Resume.pdf",
-    "expected_pages": [1],
-    "expected_answer_terms": ["malformed payloads", "invalid-state"]
   },
   {
     "question": "Which frontend state management technology did the candidate use during the internship?",

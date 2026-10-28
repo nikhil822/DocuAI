@@ -239,13 +239,19 @@ export default function App() {
 
 
   async function waitForIngestion(jobId) {
-    while (true) {
+    const timeoutMs = 5 * 60 * 1000;
+    const pollIntervalMs = 1500;
+    const deadline = Date.now() + timeoutMs;
+
+    while (Date.now() < deadline) {
       const response = await fetch(
         `${API_URL}/documents/jobs/${jobId}`
       );
 
       if (!response.ok) {
-        throw new Error("Could not retrieve ingestion status.");
+        throw new Error(
+          "Could not retrieve ingestion status."
+        );
       }
 
       const job = await response.json();
@@ -260,9 +266,23 @@ export default function App() {
         );
       }
 
-      // Poll every 1.5 seconds while queued or processing.
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (
+        !["queued", "processing"].includes(job.status)
+      ) {
+        throw new Error(
+          `Unexpected ingestion status: ${job.status}`
+        );
+      }
+
+      await new Promise((resolve) =>
+        setTimeout(resolve, pollIntervalMs)
+      );
     }
+
+    throw new Error(
+      "Document processing is taking longer than expected. "
+      + "Check the ingestion status before uploading again."
+    );
   }
 
 

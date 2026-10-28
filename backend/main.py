@@ -15,6 +15,8 @@ from llm_service import generate_answer
 from fastapi.responses import StreamingResponse
 from llm_service import generate_answer_stream
 from fastapi.middleware.cors import CORSMiddleware
+from ingestion_worker import recover_stale_jobs
+from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +25,30 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 MAX_UPLOAD_SIZE = 25 * 1024 * 1024  # 25 MB
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        recovered = await asyncio.to_thread(
+            recover_stale_jobs
+        )
+        logger.info(
+            "Stale ingestion jobs recovered: %s",
+            recovered,
+        )
+    except Exception:
+        # Don't silently hide startup recovery failures.
+        logger.exception(
+            "Failed to recover stale ingestion jobs"
+        )
+
+    yield
+
+
 app = FastAPI(
     title="DocuAI",
     description="A RAG service for PDF question answering",
     version="0.1.0",
+    lifespan=lifespan
 )
 
 app.add_middleware(
